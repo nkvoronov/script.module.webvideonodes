@@ -71,8 +71,10 @@ class VideoNodes(object):
             return param
 
     def openUrlRequest(self, url):
-        req = urllib2.Request(url, None, 20)
+        self.addLog('openURL','OPEN URL: ' + url)
+        req = urllib2.Request(url)
         req.add_header('User-agent','Mozilla/5.0')
+        resp = urllib2.urlopen(req)
         result = resp.read()
         resp.close()
         return result

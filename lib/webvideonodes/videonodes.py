@@ -33,6 +33,7 @@ class VideoNodes(object):
         self._addon_id = addon_id
         if addon_id != None:
             self._addon = xbmcaddon.Addon(addon_id)
+            self._fanart = self._addon.getAddonInfo('fanart')
         if isRun:
             self.parseNodes()
 
@@ -72,12 +73,13 @@ class VideoNodes(object):
 
     def openUrlRequest(self, url):
         self.addLog('openURL','OPEN URL: ' + url)
-        req = urllib2.Request(url)
-        req.add_header('User-agent','Mozilla/5.0')
-        resp = urllib2.urlopen(req)
-        result = resp.read()
-        resp.close()
-        return result
+        headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3',
+        'Content-Type': 'application/x-www-form-urlencoded'}
+        conn = urllib2.urlopen(urllib2.Request(url, urllib.urlencode({}), headers))
+        html = conn.read()
+        conn.close()
+        return html
 
     def RunWebBrowser(self):
         if self._options.isdocker == 1:
@@ -160,21 +162,42 @@ class VideoNodes(object):
         if ( keyboard.isConfirmed() ):
             return unicode( keyboard.getText(), 'utf-8' )
         return default
-
-    def addNextPage(self, localpath, handle, url, page, mode):
-        name = self.getLang(30011).encode('utf-8')
-        Item = xbmcgui.ListItem(name)
-        params = 'name=' + urllib.quote_plus(name) + '&url=' + urllib.quote_plus(url) + '&page=' + str(int(page) + 1)
-        Path = self.buildPath(localpath, mode, params)
+        
+    def addFolder(self, localpath, handle, url, page, mode, title, img='DefaultFolder.png', info=None):
+        Item = xbmcgui.ListItem(title, title, 'DefaultFolder.png', img)
+        Item.setProperty( 'icon', img )
+        Item.setProperty( 'fanart_image', self._fanart )
+        Item.setProperty( 'plot', title )
+        Item.setProperty( 'plotoutline', title )
+        Item.setProperty( 'tagline', title )
+        params = 'title=' + urllib.quote_plus(title) 
+        if url != 'none':
+            params = params + '&url=' + urllib.quote_plus(url)
+        if int(page) <> 0:
+            params = params + '&page=' + str(int(page))        
+        Path = self.buildPath(localpath, mode, params)        
         xbmcplugin.addDirectoryItem(handle, Path, Item, True, self._options.itemonpage)
+        
+    def addItem(self, localpath, handle, url, mode, title, img='DefaultVideo.png', info=None):
+        Item = xbmcgui.ListItem(title, title, 'DefaultVideo.png', img)
+        Item.setProperty( 'icon', img )
+        Item.setProperty( 'fanart_image', self._fanart )
+        Item.setProperty( 'plot', title )
+        Item.setProperty( 'plotoutline', title )
+        Item.setProperty( 'tagline', title )
+        params = 'title=' + urllib.quote_plus(title) + '&img=' + urllib.quote_plus(img) + '&url=' + urllib.quote_plus(url)
+        Path = self.buildPath(localpath, mode, params)
+        xbmcplugin.addDirectoryItem(handle, Path, Item, False, self._options.itemonpage)
+
+    def addNextPage(self, localpath, handle, url, page, mode, endList):
+        if endList:
+            self.addFolder(localpath, handle, url, int(page)+1, mode, self.getLang(30009).encode('utf-8') + str(int(page)+1))
         xbmcplugin.endOfDirectory(handle)
 
     def showRoot(self, localpath, handle):
         self.addLog('showRoot')
         for title, mode in self._options.root_list.items():
-            Item = xbmcgui.ListItem(self.getLang(int(title)))
-            Path = self.buildPath(localpath, str(mode))
-            xbmcplugin.addDirectoryItem(handle, Path, Item, True)
+            self.addFolder(localpath, handle, 'none', int('0'), str(mode), self.getLang(int(title)).encode('utf-8'))
         xbmcplugin.endOfDirectory(handle)
 
     def searchVideos(self, localpath, handle):
@@ -186,41 +209,41 @@ class VideoNodes(object):
 
     def showSearchList(self, localpath, handle, url, page, mode):
         pageUrl = self.buildUrl(1, url, page)
-        self.showListCommon(localpath, handle, pageUrl, False)
-        self.addNextPage(localpath, handle, url, page, mode)
+        count = self.showListCommon(localpath, handle, pageUrl, False)
+        self.addNextPage(localpath, handle, url, page, mode, count == self._options.itemonpage)
 
     def showCategories(self, localpath, handle):
         pass
 
     def showCatList(self, localpath, handle, url, page, mode):
         pageUrl = self.buildUrl(2, url, page)
-        self.showListCommon(localpath, handle, pageUrl, False)
-        self.addNextPage(localpath, handle, url, page, mode)
+        count = self.showListCommon(localpath, handle, pageUrl, False)
+        self.addNextPage(localpath, handle, url, page, mode, count == self._options.itemonpage)
 
     def showAllList(self, localpath, handle, url, page, mode):
         if url == None:
             url = self._options.base_url
         pageUrl = self.buildUrl(3, url, page)
-        self.showListCommon(localpath, handle, pageUrl, True)
-        self.addNextPage(localpath, handle, url, page, mode)
+        count = self.showListCommon(localpath, handle, pageUrl, True)
+        self.addNextPage(localpath, handle, url, page, mode, count == self._options.itemonpage)
 
-    def showListCommon(self, localpath, handle, pageUrl, isAll):
+    def showListCommon(self, localpath, handle, url, isall):
         pass
 
     def getVideo(self, url):
         return url
 
-    def playVideo(self, localpath, handle, url, name, thumb):
+    def playVideo(self, localpath, handle, url, title, img):
         try:
             self.addLog('playVideo','URL: ' + url)
             xbmc.executebuiltin('ActivateWindow(busydialog)')
-            play_url = self.getVideo(url)
+            playUrl = self.getVideo(url)
             xbmc.executebuiltin('Dialog.Close(busydialog)')
-            if play_url != 'none':
-                title = urllib.unquote_plus(name)
-                icon = urllib.unquote_plus(thumb)
-                Item = xbmcgui.ListItem(title, title, icon, icon)
-                xbmc.Player().play(play_url, Item)
+            if playUrl != 'none':
+                playTitle = urllib.unquote_plus(title)
+                playImg = urllib.unquote_plus(img)
+                Item = xbmcgui.ListItem(playTitle, playTitle, playImg, playImg)
+                xbmc.Player().play(playUrl, Item)
         except Exception, e:
             xbmc.executebuiltin('Dialog.Close(busydialog)')
             dialog = xbmcgui.Dialog()
@@ -232,8 +255,8 @@ class VideoNodes(object):
         mode = None
         url = None
         page = 1
-        name = ''
-        thumb = ''
+        title = ''
+        img = ''
 
         try:
             url = urllib.unquote_plus(params['url'])
@@ -248,11 +271,11 @@ class VideoNodes(object):
         except:
             pass
         try:
-            name = params['name']
+            title = params['title']
         except:
             pass
         try:
-            thumb = params['thumb']
+            img = params['img']
         except:
             pass
 
@@ -278,7 +301,7 @@ class VideoNodes(object):
             xbmcplugin.setContent(int(sys.argv[1]), 'movies')
             self.showAllList(sys.argv[0], int(sys.argv[1]), url, page, '12')
         elif mode == 20:
-            self.playVideo(sys.argv[0], int(sys.argv[1]), url, name, thumb)
+            self.playVideo(sys.argv[0], int(sys.argv[1]), url, title, img)
 
         if (self._options.contentviewnum <> 0) and (( mode <> None ) or (mode <> 1)):
             xbmc.executebuiltin('Container.SetViewMode(' + str(self._options.contentviewnum) + ')')

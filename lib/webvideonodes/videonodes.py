@@ -6,7 +6,7 @@ import xbmcplugin
 import xbmcaddon
 import urllib
 import urllib2
-from .options import Options
+from options import Options
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -20,6 +20,9 @@ def SettingBoolToInt(val):
         return 1
     else:
         return 0
+        
+categories_file = 'categories-list'
+search_file = 'search-list'
 
 class VideoNodes(object):
 
@@ -34,6 +37,16 @@ class VideoNodes(object):
         if addon_id != None:
             self._addon = xbmcaddon.Addon(addon_id)
             self._fanart = self._addon.getAddonInfo('fanart')
+            self._profile = xbmc.translatePath(self._addon.getAddonInfo('profile'))
+            #channels dir
+            dataDir = xbmc.translatePath(self._addon.getAddonInfo('profile')) + 'data'
+            if not os.path.exists(dataDir):
+                os.makedirs(dataDir)
+            #files
+            self._fileCategories = dataDir + os.path.sep + categories_file
+            self._fileSearches = dataDir + os.path.sep + search_file
+            self._listCategories = {}
+            self._listSearches = {}
         if isRun:
             self.parseNodes()
 
@@ -72,14 +85,22 @@ class VideoNodes(object):
             return param
 
     def openUrlRequest(self, url):
-        self.addLog('openURL','OPEN URL: ' + url)
-        headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3',
-        'Content-Type': 'application/x-www-form-urlencoded'}
-        conn = urllib2.urlopen(urllib2.Request(url, urllib.urlencode({}), headers))
-        html = conn.read()
-        conn.close()
-        return html
+        try:
+            self.addLog('VideoNodes::openUrlRequest', 'enter_function')
+            self.addLog('VideoNodes::openUrlRequest','OPEN URL: ' + url)
+            headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3',
+            'Content-Type': 'application/x-www-form-urlencoded'}
+            connect = urllib2.urlopen(urllib2.Request(url, urllib.urlencode({}), headers))
+            html = connect.read()
+            connect.close()
+            self.addLog('VideoNodes::openUrlRequest', 'exit_function')
+            return html.strip()
+        except Exception, e:
+            dialog = xbmcgui.Dialog()
+            dialog.ok('Open Url Request', 'ERROR: (' + repr(e) + ')')
+            self.addLog('VideoNodes::openUrlRequest', 'ERROR: (' + repr(e) + ')')
+            
 
     def RunWebBrowser(self):
         if self._options.isdocker == 1:
@@ -89,6 +110,9 @@ class VideoNodes(object):
             driverPath = get_driver_path('chromedriver')
             self.addLog('RunWebBrowser','Driver path: ' + driverPath)
             croptions = webdriver.ChromeOptions()
+            croptions.add_argument('disable-infobars')
+            prefs = {'profile.default_content_settings.popups' : 2, 'profile.default_content_setting_values.notifications' : 2}
+            croptions.add_experimental_option('prefs',prefs)
             if self._options.isvisible_browser != 1:
                 croptions.add_argument('headless')
             if xbmc.getCondVisibility('System.HasAddon(service.libreelec.settings)+System.HasAddon(browser.chromium)'):
@@ -118,7 +142,7 @@ class VideoNodes(object):
             self.addLog('WaitWebBrowser','Page source: ' + 'OK')
         except Exception, e:
             dialog = xbmcgui.Dialog()
-            dialog.ok('ERROR', 'ERROR: (' + repr(e) + ')')
+            dialog.ok('Wait Web Browser', 'ERROR: (' + repr(e) + ')')
             self.addLog('WaitWebBrowser', 'ERROR: (' + repr(e) + ')')
 
     def buildUrlCategories(self, url, page):
@@ -165,11 +189,8 @@ class VideoNodes(object):
         
     def addFolder(self, localpath, handle, url, page, mode, title, img='DefaultFolder.png', info=None):
         Item = xbmcgui.ListItem(title, title, 'DefaultFolder.png', img)
-        Item.setProperty( 'icon', img )
         Item.setProperty( 'fanart_image', self._fanart )
-        Item.setProperty( 'plot', title )
-        Item.setProperty( 'plotoutline', title )
-        Item.setProperty( 'tagline', title )
+        Item.setInfo(type = 'video', infoLabels = {'title':title})
         params = 'title=' + urllib.quote_plus(title) 
         if url != 'none':
             params = params + '&url=' + urllib.quote_plus(url)
@@ -180,11 +201,8 @@ class VideoNodes(object):
         
     def addItem(self, localpath, handle, url, mode, title, img='DefaultVideo.png', info=None):
         Item = xbmcgui.ListItem(title, title, 'DefaultVideo.png', img)
-        Item.setProperty( 'icon', img )
         Item.setProperty( 'fanart_image', self._fanart )
-        Item.setProperty( 'plot', title )
-        Item.setProperty( 'plotoutline', title )
-        Item.setProperty( 'tagline', title )
+        Item.setInfo(type = 'video', infoLabels = {'title':title})
         params = 'title=' + urllib.quote_plus(title) + '&img=' + urllib.quote_plus(img) + '&url=' + urllib.quote_plus(url)
         Path = self.buildPath(localpath, mode, params)
         xbmcplugin.addDirectoryItem(handle, Path, Item, False, self._options.itemonpage)
@@ -201,11 +219,24 @@ class VideoNodes(object):
         xbmcplugin.endOfDirectory(handle)
 
     def searchVideos(self, localpath, handle):
-        vq = self.getKeyboard( heading=self.getLang(30010) )
+        self.addFolder(localpath, handle, 'none', int('0'), '13', '(' + self.getLang(30005).encode('utf-8') + ')')
+        self.addFolder(localpath, handle, 'none', int('0'), '14', '(' + self.getLang(30006).encode('utf-8') + ')')
+        if os.path.isfile(self._fileSearches):
+            self.loadSearches(localpath, handle, '10')
+        xbmcplugin.endOfDirectory(handle)
+
+    def newSearchVideos(self, localpath, handle):    
+        vq = self.getKeyboard( heading=self.getLang(30010).encode('utf-8'))
         if ( not vq ): return False, 0
         searchUrl = self._options.base_url + self._options.search_query_ref + urllib.quote_plus(vq)
-        self.addLog('searchVideos', 'SEARCHING URL: ' + searchUrl)
+        self.addLog('newSearchVideos', 'SEARCHING URL: ' + searchUrl)
         self.showSearchList(localpath, handle, searchUrl, 1, '10')
+        if os.path.isfile(self._fileSearches):
+            self.loadSearches(localpath, handle, '10', 0)
+        if not self._listSearches.has_key(vq):
+            self.addLog('newSearchVideos','DATA: ' + vq + ' = ' + searchUrl)
+            self._listSearches[vq] = searchUrl
+            self.saveSearches()
 
     def showSearchList(self, localpath, handle, url, page, mode):
         pageUrl = self.buildUrl(1, url, page)
@@ -213,7 +244,58 @@ class VideoNodes(object):
         self.addNextPage(localpath, handle, url, page, mode, count == self._options.itemonpage)
 
     def showCategories(self, localpath, handle):
-        pass
+        self.addFolder(localpath, handle, 'none', int('0'), '15', '(' + self.getLang(30003).encode('utf-8') + ')')
+        self.getCategories(localpath, handle, '11')
+        xbmcplugin.endOfDirectory(handle)
+        
+    def loadSearches(self, localpath, handle, mode, addFolder=1):
+        self._listSearches = {}
+        with open(self._fileSearches) as file:
+            for item in file:
+                if ':' in item:
+                    title,url = item.split(':', 1)
+                    self._listSearches[title] = url.strip('\n')
+                    self.addLog('loadSearches','DATA: ' + title + ' = ' + url)
+                    if addFolder:
+                        self.addFolder(localpath, handle, url, 1, mode, title)
+                else:
+                    pass
+
+    def loadCategories(self, localpath, handle, mode):
+        self._listCategories = {}
+        with open(self._fileCategories) as file:
+            for item in file:
+                if ':' in item:
+                    title,url = item.split(':', 1)
+                    self._listCategories[title] = url.strip('\n')
+                    self.addFolder(localpath, handle, url, int('0'), mode, title)
+                else:
+                    pass
+                    
+    def saveSearches(self):
+        with open(self._fileSearches, 'w') as file:
+            for title in sorted(self._listSearches.keys()):
+                url = self._listSearches[title]
+                self.addLog('saveSearches','DATA: ' + title + ' = ' + url)
+                file.write('%s:%s\n' % (title, url))
+        
+    def saveCategories(self, localpath, handle, mode):
+        self._listCategories = self.getNetCategories()
+        with open(self._fileCategories, 'w') as file:
+            for title in sorted(self._listCategories.keys()):
+                url = self._listCategories[title]
+                file.write('%s:%s\n' % (title, url))
+                self.addFolder(localpath, handle, url, int('0'), mode, title)
+        
+    def getNetCategories(self):
+        list = {}
+        return list
+        
+    def getCategories(self, localpath, handle, mode):
+        if os.path.isfile(self._fileCategories):
+            self.loadCategories(localpath, handle, mode)
+        else:
+            self.saveCategories(localpath, handle, mode)
 
     def showCatList(self, localpath, handle, url, page, mode):
         pageUrl = self.buildUrl(2, url, page)
@@ -226,6 +308,11 @@ class VideoNodes(object):
         pageUrl = self.buildUrl(3, url, page)
         count = self.showListCommon(localpath, handle, pageUrl, True)
         self.addNextPage(localpath, handle, url, page, mode, count == self._options.itemonpage)
+        
+    def addNavFolders(self, localpath, handle):
+        self.addFolder(localpath, handle, 'none', int('0'), '', self.getLang(30004).encode('utf-8'))
+        self.addFolder(localpath, handle, 'none', int('0'), str(0), self.getLang(30000).encode('utf-8'))
+        self.addFolder(localpath, handle, 'none', int('0'), str(1), self.getLang(30001).encode('utf-8'))
 
     def showListCommon(self, localpath, handle, url, isall):
         pass
@@ -283,7 +370,7 @@ class VideoNodes(object):
             xbmcplugin.setContent(int(sys.argv[1]), 'files')
             self.showRoot(sys.argv[0], int(sys.argv[1]))
         elif mode == 0:
-            xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+            xbmcplugin.setContent(int(sys.argv[1]), 'files')
             self.searchVideos(sys.argv[0], int(sys.argv[1]))
         elif mode == 1:
             xbmcplugin.setContent(int(sys.argv[1]), 'files')
@@ -300,6 +387,17 @@ class VideoNodes(object):
         elif mode == 12:
             xbmcplugin.setContent(int(sys.argv[1]), 'movies')
             self.showAllList(sys.argv[0], int(sys.argv[1]), url, page, '12')
+        elif mode == 13:
+            xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+            self.newSearchVideos(sys.argv[0], int(sys.argv[1]))
+        elif mode == 14:
+            if os.path.exists(self._fileSearches):
+                os.remove(self._fileSearches)
+            xbmc.executebuiltin('Container.Refresh')
+        elif mode == 15:
+            if os.path.exists(self._fileCategories):
+                os.remove(self._fileCategories)
+            xbmc.executebuiltin('Container.Refresh')
         elif mode == 20:
             self.playVideo(sys.argv[0], int(sys.argv[1]), url, title, img)
 

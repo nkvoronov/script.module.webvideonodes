@@ -252,9 +252,9 @@ class VideoNodes(object):
         self._listSearches = {}
         with open(self._fileSearches) as file:
             for item in file:
-                if ':' in item:
-                    title,url = item.split(':', 1)
-                    self._listSearches[title] = url.strip('\n')
+                if '|' in item:
+                    title,url,end = item.split('|')
+                    self._listSearches[title] = url
                     self.addLog('loadSearches','DATA: ' + title + ' = ' + url)
                     if addFolder:
                         self.addFolder(localpath, handle, url, 1, mode, title)
@@ -265,9 +265,9 @@ class VideoNodes(object):
         self._listCategories = {}
         with open(self._fileCategories) as file:
             for item in file:
-                if ':' in item:
-                    title,url = item.split(':', 1)
-                    self._listCategories[title] = url.strip('\n')
+                if '|' in item:
+                    title,url,end = item.split('|')
+                    self._listCategories[title] = url
                     self.addFolder(localpath, handle, url, int('0'), mode, title)
                 else:
                     pass
@@ -277,14 +277,14 @@ class VideoNodes(object):
             for title in sorted(self._listSearches.keys()):
                 url = self._listSearches[title]
                 self.addLog('saveSearches','DATA: ' + title + ' = ' + url)
-                file.write('%s:%s\n' % (title, url))
+                file.write('%s|%s|e\n' % (title, url))
         
     def saveCategories(self, localpath, handle, mode):
         self._listCategories = self.getNetCategories()
         with open(self._fileCategories, 'w') as file:
             for title in sorted(self._listCategories.keys()):
                 url = self._listCategories[title]
-                file.write('%s:%s\n' % (title, url))
+                file.write('%s|%s|e\n' % (title, url))
                 self.addFolder(localpath, handle, url, int('0'), mode, title)
         
     def getNetCategories(self):

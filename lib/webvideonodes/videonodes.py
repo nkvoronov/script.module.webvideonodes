@@ -138,7 +138,8 @@ class VideoNodes(object):
                 element_present = EC.presence_of_element_located((By.CLASS_NAME, value))
             elif type == 'CSS_SELECTOR':
                 element_present = EC.presence_of_element_located((By.CSS_SELECTOR, value))
-            WebDriverWait(driver, self._options.timeout).until(element_present)
+            wait = WebDriverWait(driver, self._options.timeout)
+            wait.until(element_present)
             self.addLog('WaitWebBrowser','Page source: ' + 'OK')
         except Exception, e:
             dialog = xbmcgui.Dialog()

@@ -324,16 +324,16 @@ class VideoNodes(object):
     def playVideo(self, localpath, handle, url, title, img):
         try:
             self.addLog('playVideo','URL: ' + url)
-            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
             playUrl = self.getVideo(url)
-            xbmc.executebuiltin('Dialog.Close(busydialog)')
+            xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
             if playUrl != 'none':
                 playTitle = urllib.unquote_plus(title)
                 playImg = urllib.unquote_plus(img)
                 Item = xbmcgui.ListItem(playTitle, playTitle, playImg, playImg)
                 xbmc.Player().play(playUrl, Item)
         except Exception, e:
-            xbmc.executebuiltin('Dialog.Close(busydialog)')
+            xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
             dialog = xbmcgui.Dialog()
             ok = dialog.ok('Play Video', 'ERROR: ' + repr(e))
             self.addLog('playVideo', 'ERROR: (' + repr(e) + ')')

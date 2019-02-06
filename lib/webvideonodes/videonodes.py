@@ -198,7 +198,7 @@ class VideoNodes(object):
         if int(page) <> 0:
             params = params + '&page=' + str(int(page))        
         Path = self.buildPath(localpath, mode, params)        
-        xbmcplugin.addDirectoryItem(handle, Path, Item, True, self._options.itemonpage)
+        xbmcplugin.addDirectoryItem(handle, Path, Item, True, self._options.itemonpage + 4)
         
     def addItem(self, localpath, handle, url, mode, title, img='DefaultVideo.png', info=None):
         Item = xbmcgui.ListItem(title, title, 'DefaultVideo.png', img)
@@ -206,27 +206,32 @@ class VideoNodes(object):
         Item.setInfo(type = 'video', infoLabels = {'title':title})
         params = 'title=' + urllib.quote_plus(title) + '&img=' + urllib.quote_plus(img) + '&url=' + urllib.quote_plus(url)
         Path = self.buildPath(localpath, mode, params)
-        xbmcplugin.addDirectoryItem(handle, Path, Item, False, self._options.itemonpage)
+        xbmcplugin.addDirectoryItem(handle, Path, Item, False, self._options.itemonpage + 4)
 
     def addNextPage(self, localpath, handle, url, page, mode, endList):
         if endList:
             self.addFolder(localpath, handle, url, int(page)+1, mode, self.getLang(30009).encode('utf-8') + str(int(page)+1))
         xbmcplugin.endOfDirectory(handle)
+        if self._options.contentviewnum <> 0:
+            xbmc.executebuiltin('Container.SetViewMode(' + str(self._options.contentviewnum) + ')')
 
     def showRoot(self, localpath, handle):
+        xbmcplugin.setContent(int(sys.argv[1]), 'files')
         self.addLog('showRoot')
-        for title, mode in self._options.root_list.items():
+        for title, mode in sorted(self._options.root_list.items()):
             self.addFolder(localpath, handle, 'none', int('0'), str(mode), self.getLang(int(title)).encode('utf-8'))
         xbmcplugin.endOfDirectory(handle)
 
     def searchVideos(self, localpath, handle):
+        xbmcplugin.setContent(int(sys.argv[1]), 'files')
         self.addFolder(localpath, handle, 'none', int('0'), '13', '(' + self.getLang(30005).encode('utf-8') + ')')
         self.addFolder(localpath, handle, 'none', int('0'), '14', '(' + self.getLang(30006).encode('utf-8') + ')')
         if os.path.isfile(self._fileSearches):
             self.loadSearches(localpath, handle, '10')
         xbmcplugin.endOfDirectory(handle)
 
-    def newSearchVideos(self, localpath, handle):    
+    def newSearchVideos(self, localpath, handle):
+        xbmcplugin.setContent(int(sys.argv[1]), 'movies')
         vq = self.getKeyboard( heading=self.getLang(30010).encode('utf-8'))
         if ( not vq ): return False, 0
         searchUrl = self._options.base_url + self._options.search_query_ref + urllib.quote_plus(vq)
@@ -240,11 +245,13 @@ class VideoNodes(object):
             self.saveSearches()
 
     def showSearchList(self, localpath, handle, url, page, mode):
+        xbmcplugin.setContent(int(sys.argv[1]), 'movies')
         pageUrl = self.buildUrl(1, url, page)
         count = self.showListCommon(localpath, handle, pageUrl, False)
         self.addNextPage(localpath, handle, url, page, mode, count == self._options.itemonpage)
 
     def showCategories(self, localpath, handle):
+        xbmcplugin.setContent(int(sys.argv[1]), 'files')
         self.addFolder(localpath, handle, 'none', int('0'), '15', '(' + self.getLang(30003).encode('utf-8') + ')')
         self.getCategories(localpath, handle, '11')
         xbmcplugin.endOfDirectory(handle)
@@ -299,11 +306,13 @@ class VideoNodes(object):
             self.saveCategories(localpath, handle, mode)
 
     def showCatList(self, localpath, handle, url, page, mode):
+        xbmcplugin.setContent(int(sys.argv[1]), 'movies')
         pageUrl = self.buildUrl(2, url, page)
         count = self.showListCommon(localpath, handle, pageUrl, False)
         self.addNextPage(localpath, handle, url, page, mode, count == self._options.itemonpage)
 
     def showAllList(self, localpath, handle, url, page, mode):
+        xbmcplugin.setContent(int(sys.argv[1]), 'movies')
         if url == None:
             url = self._options.base_url
         pageUrl = self.buildUrl(3, url, page)
@@ -368,28 +377,20 @@ class VideoNodes(object):
             pass
 
         if mode == None:
-            xbmcplugin.setContent(int(sys.argv[1]), 'files')
             self.showRoot(sys.argv[0], int(sys.argv[1]))
         elif mode == 0:
-            xbmcplugin.setContent(int(sys.argv[1]), 'files')
             self.searchVideos(sys.argv[0], int(sys.argv[1]))
         elif mode == 1:
-            xbmcplugin.setContent(int(sys.argv[1]), 'files')
             self.showCategories(sys.argv[0], int(sys.argv[1]))
         elif mode == 2:
-            xbmcplugin.setContent(int(sys.argv[1]), 'movies')
             self.showAllList(sys.argv[0], int(sys.argv[1]), url, page, '12')
         elif mode == 10:
-            xbmcplugin.setContent(int(sys.argv[1]), 'movies')
             self.showSearchList(sys.argv[0], int(sys.argv[1]), url, page, '10')
         elif mode == 11:
-            xbmcplugin.setContent(int(sys.argv[1]), 'movies')
             self.showCatList(sys.argv[0], int(sys.argv[1]), url, page, '11')
         elif mode == 12:
-            xbmcplugin.setContent(int(sys.argv[1]), 'movies')
             self.showAllList(sys.argv[0], int(sys.argv[1]), url, page, '12')
         elif mode == 13:
-            xbmcplugin.setContent(int(sys.argv[1]), 'movies')
             self.newSearchVideos(sys.argv[0], int(sys.argv[1]))
         elif mode == 14:
             if os.path.exists(self._fileSearches):
@@ -401,6 +402,3 @@ class VideoNodes(object):
             xbmc.executebuiltin('Container.Refresh')
         elif mode == 20:
             self.playVideo(sys.argv[0], int(sys.argv[1]), url, title, img)
-
-        if (self._options.contentviewnum <> 0) and (( mode <> None ) or (mode <> 1)):
-            xbmc.executebuiltin('Container.SetViewMode(' + str(self._options.contentviewnum) + ')')

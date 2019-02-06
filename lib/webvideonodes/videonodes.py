@@ -38,7 +38,7 @@ class VideoNodes(object):
             self._addon = xbmcaddon.Addon(addon_id)
             self._fanart = self._addon.getAddonInfo('fanart')
             self._profile = xbmc.translatePath(self._addon.getAddonInfo('profile'))
-            #channels dir
+            #data dir
             dataDir = xbmc.translatePath(self._addon.getAddonInfo('profile')) + 'data'
             if not os.path.exists(dataDir):
                 os.makedirs(dataDir)

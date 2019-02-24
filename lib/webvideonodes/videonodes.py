@@ -142,9 +142,7 @@ class VideoNodes(object):
             wait.until(element_present)
             self.addLog('WaitWebBrowser','Page source: ' + 'OK')
         except Exception, e:
-            dialog = xbmcgui.Dialog()
-            dialog.ok('Wait Web Browser', 'ERROR: (' + repr(e) + ')')
-            self.addLog('WaitWebBrowser', 'ERROR: (' + repr(e) + ')')
+            pass
 
     def buildUrlCategories(self, url, page):
         return url

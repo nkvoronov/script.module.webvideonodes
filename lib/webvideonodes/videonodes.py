@@ -100,7 +100,6 @@ class VideoNodes(object):
             dialog = xbmcgui.Dialog()
             dialog.ok('Open Url Request', 'ERROR: (' + repr(e) + ')')
             self.addLog('VideoNodes::openUrlRequest', 'ERROR: (' + repr(e) + ')')
-            
 
     def RunWebBrowser(self):
         if self._options.isdocker == 1:
@@ -115,6 +114,8 @@ class VideoNodes(object):
             croptions.add_experimental_option('prefs',prefs)
             if self._options.isvisible_browser != 1:
                 croptions.add_argument('headless')
+            if xbmc.getCondVisibility('System.HasAddon(service.libreelec.settings)+System.HasAddon(browser.chrome)'):	
+                croptions.binary_location = xbmcaddon.Addon('browser.chrome').getAddonInfo('path') + os.path.sep + 'bin' + os.path.sep + 'chrome-start'
             driver = webdriver.Chrome(driverPath, chrome_options=croptions)
         return driver
 

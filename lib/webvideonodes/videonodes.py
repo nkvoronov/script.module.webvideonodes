@@ -1,6 +1,7 @@
 import os
 import sys
 import xbmc
+import xbmcvfs
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
@@ -37,9 +38,9 @@ class VideoNodes(object):
         if addon_id != None:
             self._addon = xbmcaddon.Addon(addon_id)
             self._fanart = self._addon.getAddonInfo('fanart')
-            self._profile = xbmc.translatePath(self._addon.getAddonInfo('profile'))
+            self._profile = xbmcvfs.translatePath(self._addon.getAddonInfo('profile'))
             #data dir
-            dataDir = xbmc.translatePath(self._addon.getAddonInfo('profile')) + 'data'
+            dataDir = xbmcvfs.translatePath(self._addon.getAddonInfo('profile')) + 'data'
             if not os.path.exists(dataDir):
                 os.makedirs(dataDir)
             #files

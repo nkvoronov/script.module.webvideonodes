@@ -97,7 +97,7 @@ class VideoNodes(object):
             connect.close()
             self.addLog('VideoNodes::openUrlRequest', 'exit_function')
             return html.strip()
-        except Exception, e:
+        except Exception as e:
             dialog = xbmcgui.Dialog()
             dialog.ok('Open Url Request', 'ERROR: (' + repr(e) + ')')
             self.addLog('VideoNodes::openUrlRequest', 'ERROR: (' + repr(e) + ')')
@@ -141,7 +141,7 @@ class VideoNodes(object):
             wait = WebDriverWait(driver, self._options.timeout)
             wait.until(element_present)
             self.addLog('WaitWebBrowser','Page source: ' + 'OK')
-        except Exception, e:
+        except Exception as e:
             pass
 
     def buildUrlCategories(self, url, page):
@@ -339,7 +339,7 @@ class VideoNodes(object):
                 playImg = urllib.unquote_plus(img)
                 Item = xbmcgui.ListItem(playTitle, playTitle, playImg, playImg)
                 xbmc.Player().play(playUrl, Item)
-        except Exception, e:
+        except Exception as e:
             xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
             dialog = xbmcgui.Dialog()
             ok = dialog.ok('Play Video', 'ERROR: ' + repr(e))

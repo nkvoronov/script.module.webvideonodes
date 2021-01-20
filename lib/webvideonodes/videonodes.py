@@ -5,15 +5,17 @@ import xbmcvfs
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urllib
-from options import Options
+from urllib.parse import quote
+from urllib.parse import quote_plus
+from urllib.parse import unquote_plus
+from .options import Options
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.common.driver_utils import get_driver_path
-from selenium.webdriver.common.driver_utils import run_selenium_doker
+from webdriver_utils import get_driver_path
+from webdriver_utils import run_selenium_doker
 
 def SettingBoolToInt(val):
     if val == 'true':
@@ -64,7 +66,7 @@ class VideoNodes(object):
     def addLog(self, source, text=''):
         if self._options.isdebug == 0:
             return
-        xbmc.log('## ' + self._addon.getAddonInfo('name') + ' ## ' + source + ' ## ' + text)
+        xbmc.log('## ' + self._addon.getAddonInfo('name') + ' ## ' + source + ' ## ' + text, xbmc.LOGINFO)
 
     def getParams(self, args):
         param=[]
@@ -182,32 +184,32 @@ class VideoNodes(object):
         keyboard = xbmc.Keyboard( default, heading, hidden )
         keyboard.doModal()
         if ( keyboard.isConfirmed() ):
-            return unicode( keyboard.getText(), 'utf-8' )
+            return keyboard.getText()
         return default
         
     def addFolder(self, localpath, handle, url, page, mode, title, img='DefaultFolder.png', info=None):
-        Item = xbmcgui.ListItem(title, title, 'DefaultFolder.png', img)
-        Item.setProperty( 'fanart_image', self._fanart )
+        Item = xbmcgui.ListItem(title, title)
+        Item.setArt({'icon': "DefaultFolder.png", 'fanart': self._fanart})
         Item.setInfo(type = 'video', infoLabels = {'title':title})
-        params = 'title=' + urllib.quote_plus(title) 
+        params = 'title=' + quote_plus(title) 
         if url != 'none':
-            params = params + '&url=' + urllib.quote_plus(url)
+            params = params + '&url=' + quote_plus(url)
         if int(page) != 0:
             params = params + '&page=' + str(int(page))        
         Path = self.buildPath(localpath, mode, params)        
         xbmcplugin.addDirectoryItem(handle, Path, Item, True, self._options.itemonpage + 4)
         
     def addItem(self, localpath, handle, url, mode, title, img='DefaultVideo.png', info=None):
-        Item = xbmcgui.ListItem(title, title, 'DefaultVideo.png', img)
-        Item.setProperty( 'fanart_image', self._fanart )
+        Item = xbmcgui.ListItem(title, title)
+        Item.setArt({'poster': img, 'icon': "DefaultFolder.png", 'fanart': self._fanart})
         Item.setInfo(type = 'video', infoLabels = {'title':title})
-        params = 'title=' + urllib.quote_plus(title) + '&img=' + urllib.quote_plus(img) + '&url=' + urllib.quote_plus(url)
+        params = 'title=' + quote_plus(title) + '&img=' + quote_plus(img) + '&url=' + quote_plus(url)
         Path = self.buildPath(localpath, mode, params)
         xbmcplugin.addDirectoryItem(handle, Path, Item, False, self._options.itemonpage + 4)
 
     def addNextPage(self, localpath, handle, url, page, mode, endList):
         if endList:
-            self.addFolder(localpath, handle, url, int(page)+1, mode, self.getLang(30009).encode('utf-8') + str(int(page)+1))
+            self.addFolder(localpath, handle, url, int(page)+1, mode, self.getLang(30009) + str(int(page)+1))
         xbmcplugin.endOfDirectory(handle)
         if self._options.contentviewnum != 0:
             xbmc.executebuiltin('Container.SetViewMode(' + str(self._options.contentviewnum) + ')')
@@ -216,27 +218,27 @@ class VideoNodes(object):
         xbmcplugin.setContent(int(sys.argv[1]), 'files')
         self.addLog('showRoot')
         for title, mode in sorted(self._options.root_list.items()):
-            self.addFolder(localpath, handle, 'none', int('0'), str(mode), self.getLang(int(title)).encode('utf-8'))
+            self.addFolder(localpath, handle, 'none', int('0'), str(mode), self.getLang(int(title)))
         xbmcplugin.endOfDirectory(handle)
 
     def searchVideos(self, localpath, handle):
         xbmcplugin.setContent(int(sys.argv[1]), 'files')
-        self.addFolder(localpath, handle, 'none', int('0'), '13', '(' + self.getLang(30005).encode('utf-8') + ')')
-        self.addFolder(localpath, handle, 'none', int('0'), '14', '(' + self.getLang(30006).encode('utf-8') + ')')
+        self.addFolder(localpath, handle, 'none', int('0'), '13', '(' + self.getLang(30005) + ')')
+        self.addFolder(localpath, handle, 'none', int('0'), '14', '(' + self.getLang(30006) + ')')
         if os.path.isfile(self._fileSearches):
             self.loadSearches(localpath, handle, '10')
         xbmcplugin.endOfDirectory(handle)
 
     def newSearchVideos(self, localpath, handle):
         xbmcplugin.setContent(int(sys.argv[1]), 'movies')
-        vq = self.getKeyboard( heading=self.getLang(30010).encode('utf-8'))
+        vq = self.getKeyboard( heading=self.getLang(30010))
         if ( not vq ): return False, 0
-        searchUrl = self._options.base_url + self._options.search_query_ref + urllib.quote_plus(vq)
+        searchUrl = self._options.base_url + self._options.search_query_ref + quote(vq)
         self.addLog('newSearchVideos', 'SEARCHING URL: ' + searchUrl)
         self.showSearchList(localpath, handle, searchUrl, 1, '10')
         if os.path.isfile(self._fileSearches):
             self.loadSearches(localpath, handle, '10', 0)
-        if not self._listSearches.has_key(vq):
+        if vq not in self._listSearches:
             self.addLog('newSearchVideos','DATA: ' + vq + ' = ' + searchUrl)
             self._listSearches[vq] = searchUrl
             self.saveSearches()
@@ -249,7 +251,7 @@ class VideoNodes(object):
 
     def showCategories(self, localpath, handle):
         xbmcplugin.setContent(int(sys.argv[1]), 'files')
-        self.addFolder(localpath, handle, 'none', int('0'), '15', '(' + self.getLang(30003).encode('utf-8') + ')')
+        self.addFolder(localpath, handle, 'none', int('0'), '15', '(' + self.getLang(30003) + ')')
         self.getCategories(localpath, handle, '11')
         xbmcplugin.endOfDirectory(handle)
         
@@ -317,9 +319,9 @@ class VideoNodes(object):
         self.addNextPage(localpath, handle, url, page, mode, count == self._options.itemonpage)
         
     def addNavFolders(self, localpath, handle):
-        self.addFolder(localpath, handle, 'none', int('0'), '', self.getLang(30004).encode('utf-8'))
-        self.addFolder(localpath, handle, 'none', int('0'), str(0), self.getLang(30000).encode('utf-8'))
-        self.addFolder(localpath, handle, 'none', int('0'), str(1), self.getLang(30001).encode('utf-8'))
+        self.addFolder(localpath, handle, 'none', int('0'), '', self.getLang(30004))
+        self.addFolder(localpath, handle, 'none', int('0'), str(0), self.getLang(30000))
+        self.addFolder(localpath, handle, 'none', int('0'), str(1), self.getLang(30001))
 
     def showListCommon(self, localpath, handle, url, isall):
         pass
@@ -333,10 +335,13 @@ class VideoNodes(object):
             xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
             playUrl = self.getVideo(url)
             xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+            self.addLog('playVideo','Play URL: ' + playUrl)
             if playUrl != 'none':
-                playTitle = urllib.unquote_plus(title)
-                playImg = urllib.unquote_plus(img)
-                Item = xbmcgui.ListItem(playTitle, playTitle, playImg, playImg)
+                playTitle = unquote_plus(title)
+                playImg = unquote_plus(img)
+                Item = xbmcgui.ListItem(playTitle, playTitle)
+                Item.setArt({'poster': playImg, 'icon': "DefaultFolder.png", 'fanart': self._fanart})
+                Item.setInfo(type = 'video', infoLabels = {'title':playTitle})
                 xbmc.Player().play(playUrl, Item)
         except Exception as e:
             xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
@@ -353,7 +358,7 @@ class VideoNodes(object):
         img = ''
 
         try:
-            url = urllib.unquote_plus(params['url'])
+            url = unquote_plus(params['url'])
         except:
             pass
         try:
@@ -392,10 +397,10 @@ class VideoNodes(object):
         elif mode == 14:
             if os.path.exists(self._fileSearches):
                 os.remove(self._fileSearches)
-            xbmc.executebuiltin('Container.Refresh')
+                xbmc.executebuiltin('Container.Refresh')
         elif mode == 15:
             if os.path.exists(self._fileCategories):
                 os.remove(self._fileCategories)
-            xbmc.executebuiltin('Container.Refresh')
+                xbmc.executebuiltin('Container.Refresh')
         elif mode == 20:
             self.playVideo(sys.argv[0], int(sys.argv[1]), url, title, img)

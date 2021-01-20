@@ -193,7 +193,7 @@ class VideoNodes(object):
         params = 'title=' + urllib.quote_plus(title) 
         if url != 'none':
             params = params + '&url=' + urllib.quote_plus(url)
-        if int(page) <> 0:
+        if int(page) != 0:
             params = params + '&page=' + str(int(page))        
         Path = self.buildPath(localpath, mode, params)        
         xbmcplugin.addDirectoryItem(handle, Path, Item, True, self._options.itemonpage + 4)
@@ -210,7 +210,7 @@ class VideoNodes(object):
         if endList:
             self.addFolder(localpath, handle, url, int(page)+1, mode, self.getLang(30009).encode('utf-8') + str(int(page)+1))
         xbmcplugin.endOfDirectory(handle)
-        if self._options.contentviewnum <> 0:
+        if self._options.contentviewnum != 0:
             xbmc.executebuiltin('Container.SetViewMode(' + str(self._options.contentviewnum) + ')')
 
     def showRoot(self, localpath, handle):

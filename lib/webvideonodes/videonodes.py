@@ -6,7 +6,6 @@ import xbmcgui
 import xbmcplugin
 import xbmcaddon
 import urllib
-import urllib2
 from options import Options
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -92,7 +91,7 @@ class VideoNodes(object):
             headers = {
             'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3',
             'Content-Type': 'application/x-www-form-urlencoded'}
-            connect = urllib2.urlopen(urllib2.Request(url, urllib.urlencode({}), headers))
+            connect = urllib.request.urlopen(urllib.request.Request(url, urllib.urlencode({}), headers))
             html = connect.read()
             connect.close()
             self.addLog('VideoNodes::openUrlRequest', 'exit_function')

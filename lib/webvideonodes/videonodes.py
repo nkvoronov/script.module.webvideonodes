@@ -14,8 +14,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from webdriver_utils import get_driver_path
-from webdriver_utils import run_selenium_doker
+from .webdriver import get_driver_path
+from .webdriver import run_selenium_doker
 
 def SettingBoolToInt(val):
     if val == 'true':

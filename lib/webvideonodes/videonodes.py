@@ -12,8 +12,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.common.driver_utils import get_driver_path
-from selenium.webdriver.common.driver_utils import run_selenium_doker
+from webdriver import get_driver_path
+from webdriver import run_selenium_doker
 
 def SettingBoolToInt(val):
     if val == 'true':
@@ -39,7 +39,7 @@ class VideoNodes(object):
             self._fanart = self._addon.getAddonInfo('fanart')
             self._profile = xbmc.translatePath(self._addon.getAddonInfo('profile'))
             #data dir
-            dataDir = xbmc.translatePath(self._addon.getAddonInfo('profile')) + 'data'
+            dataDir = self._profile + 'data'
             if not os.path.exists(dataDir):
                 os.makedirs(dataDir)
             #files
@@ -192,7 +192,7 @@ class VideoNodes(object):
         params = 'title=' + urllib.quote_plus(title) 
         if url != 'none':
             params = params + '&url=' + urllib.quote_plus(url)
-        if int(page) <> 0:
+        if int(page) != 0:
             params = params + '&page=' + str(int(page))        
         Path = self.buildPath(localpath, mode, params)        
         xbmcplugin.addDirectoryItem(handle, Path, Item, True, self._options.itemonpage + 4)
@@ -209,7 +209,7 @@ class VideoNodes(object):
         if endList:
             self.addFolder(localpath, handle, url, int(page)+1, mode, self.getLang(30009).encode('utf-8') + str(int(page)+1))
         xbmcplugin.endOfDirectory(handle)
-        if self._options.contentviewnum <> 0:
+        if self._options.contentviewnum != 0:
             xbmc.executebuiltin('Container.SetViewMode(' + str(self._options.contentviewnum) + ')')
 
     def showRoot(self, localpath, handle):
@@ -333,6 +333,7 @@ class VideoNodes(object):
             xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
             playUrl = self.getVideo(url)
             xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+            self.addLog('playVideo','Play URL: ' + playUrl)
             if playUrl != 'none':
                 playTitle = urllib.unquote_plus(title)
                 playImg = urllib.unquote_plus(img)
@@ -392,10 +393,10 @@ class VideoNodes(object):
         elif mode == 14:
             if os.path.exists(self._fileSearches):
                 os.remove(self._fileSearches)
-            xbmc.executebuiltin('Container.Refresh')
+                xbmc.executebuiltin('Container.Refresh')
         elif mode == 15:
             if os.path.exists(self._fileCategories):
                 os.remove(self._fileCategories)
-            xbmc.executebuiltin('Container.Refresh')
+                xbmc.executebuiltin('Container.Refresh')
         elif mode == 20:
             self.playVideo(sys.argv[0], int(sys.argv[1]), url, title, img)

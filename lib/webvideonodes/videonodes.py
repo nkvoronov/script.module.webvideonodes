@@ -41,7 +41,7 @@ class VideoNodes(object):
             self._fanart = self._addon.getAddonInfo('fanart')
             self._profile = xbmcvfs.translatePath(self._addon.getAddonInfo('profile'))
             #data dir
-            dataDir = xbmcvfs.translatePath(self._addon.getAddonInfo('profile')) + 'data'
+            dataDir = self._profile + 'data'
             if not os.path.exists(dataDir):
                 os.makedirs(dataDir)
             #files

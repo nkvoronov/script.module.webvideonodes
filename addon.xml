@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.module.webvideonodes"
 		name="Web Video Nodes"
-		version="1.8.0"
+		version="1.8.1"
 		provider-name="YDRAGON">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
@@ -18,7 +18,6 @@
 		<description lang="ru_RU">Web Video Nodes.</description>
 		<description lang="uk_UA">Web Video Nodes.</description>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
-		<platform>all</platform>
 		<email>nkvoronov@gmail.com</email>
 		<source>https://github.com/nkvoronov/script.module.webvideonodes.git</source>
 		<assets>

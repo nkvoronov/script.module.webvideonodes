@@ -102,7 +102,7 @@ class VideoNodes(object):
             dialog = xbmcgui.Dialog()
             dialog.ok('Open Url Request', 'ERROR: (' + repr(e) + ')')
             self.addLog('VideoNodes::openUrlRequest', 'ERROR: (' + repr(e) + ')')
-            
+
     def RunWebBrowser(self):
         if self._options.isdocker == 1:
             run_selenium_doker()
@@ -114,6 +114,8 @@ class VideoNodes(object):
             croptions.add_argument('disable-infobars')
             prefs = {'profile.default_content_settings.popups' : 2, 'profile.default_content_setting_values.notifications' : 2}
             croptions.add_experimental_option('prefs',prefs)
+            if self._options.isandroid == 1:
+                croptions.add_experimental_option('androidPackage', 'com.android.chrome')
             if self._options.isvisible_browser != 1:
                 croptions.add_argument('headless')
             if xbmc.getCondVisibility('System.HasAddon(service.libreelec.settings)+System.HasAddon(browser.chrome)'):	

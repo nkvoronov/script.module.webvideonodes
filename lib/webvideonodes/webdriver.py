@@ -19,11 +19,14 @@ def run_selenium_doker():
     return code
 
 def get_driver_path(dname):
-    rpath = _addon.getAddonInfo('path') + os.path.sep + 'bin' + os.path.sep + dname + os.path.sep
-    if platform.system() == 'Windows':
+    rpath = _addon.getAddonInfo('path') + 'bin' + os.path.sep + dname + os.path.sep
+    system = platform.system().lower()
+    if 'windows' in system or xbmc.getCondVisibility('system.platform.windows'):
         result = rpath + 'win32' + os.path.sep + dname
-    if platform.system() == 'Linux':
+    if 'linux' in system or xbmc.getCondVisibility('system.platform.linux'):
         result = rpath + 'linux64' + os.path.sep + dname
+        if xbmc.getCondVisibility('system.platform.android'):
+            result = rpath + 'android' + os.path.sep + dname        
         if dname == 'docker':
             result = result + '.start'
         os.system('chmod +x ' + result)

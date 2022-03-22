@@ -2,15 +2,16 @@ class Options(object):
 
     def __init__(self):
         self._base_url = ''
-        self._search_query_ref = ''        
-        self._isdocker = 0        
+        self._search_query_ref = ''
+        self._isdocker = 0
         self._isdebug = 0
+        self._isandroid = 0
         self._isvisible_browser = 0
         self._itemonpage = 20
         self._contentviewnum = 50
         self._timeout = 60
         self._root_list = {}
-        
+
     @property
     def base_url(self):
         return self._base_url
@@ -33,7 +34,15 @@ class Options(object):
 
     @isdocker.setter
     def isdocker(self, value):
-        self._isdocker = value  
+        self._isdocker = value
+       
+    @property
+    def isandroid(self):
+        return self._isandroid
+
+    @isandroid.setter
+    def isandroid(self, value):
+        self._isandroid = value
 
     @property
     def isdebug(self):
